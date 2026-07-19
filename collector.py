@@ -10,11 +10,19 @@ from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from groq import Groq
 
-# ── Load API key ──
-with open(os.path.expanduser("~/.groq_key")) as f:
-    GROQ_API_KEY = f.read().strip()
+# — Load API key —
+api_key = os.getenv("GROQ_API_KEY")
 
-client = Groq(api_key=GROQ_API_KEY)
+if not api_key:
+    try:
+        with open(os.path.expanduser("~/.groq_key")) as f:
+            api_key = f.read().strip()
+    except FileNotFoundError:
+        raise Exception("GROQ_API_KEY not found in environment or ~/.groq_key file")
+
+client = Groq(api_key=api_key)
+
+
 MODEL = "llama-3.1-8b-instant"  # fast + high free-tier rate limits
 
 CUTOFF_DATE = datetime.now(timezone.utc) - timedelta(days=7)
