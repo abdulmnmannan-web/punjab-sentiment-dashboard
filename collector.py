@@ -12,7 +12,6 @@ from groq import Groq
 
 # — Load API key —
 api_key = os.getenv("GROQ_API_KEY")
-
 if not api_key:
     try:
         with open(os.path.expanduser("~/.groq_key")) as f:
@@ -21,12 +20,8 @@ if not api_key:
         raise Exception("GROQ_API_KEY not found in environment or ~/.groq_key file")
 
 client = Groq(api_key=api_key)
-
-
 MODEL = "llama-3.1-8b-instant"  # fast + high free-tier rate limits
-
 CUTOFF_DATE = datetime.now(timezone.utc) - timedelta(days=7)
-
 PARTIES = ["AAP", "INC", "BJP", "SAD"]
 
 SYSTEM_PROMPT = """You are a political news analyst for Punjab, India. Given a news headline, determine:
@@ -34,7 +29,6 @@ SYSTEM_PROMPT = """You are a political news analyst for Punjab, India. Given a n
 2. The sentiment toward that party: "favoring" (positive/complimentary), "against" (critical/negative), or "neutral" (factual, no clear sentiment, or sarcasm/mockery should be scored as "against" the party being mocked).
 3. A sentiment score from -1.0 (very negative) to 1.0 (very positive), 0.0 for neutral.
 4. A one-sentence reasoning.
-
 Respond ONLY with valid JSON in this exact format, no other text:
 {"party": "INC", "sentiment_label": "against", "sentiment_score": -0.6, "reasoning": "explanation here"}
 """
@@ -79,7 +73,7 @@ def load_keywords():
 
 def is_recent(dt):
     if dt is None:
-        return True  # if we can't parse date, don't exclude -- let AI decide relevance
+        return True
     return dt >= CUTOFF_DATE
 
 def parse_gdelt_date(seendate_str):
@@ -119,7 +113,10 @@ def fetch_gdelt(query, max_records=100, retries=2):
 
 def process_gdelt(articles, searched_party):
     rows = []
+    max_articles = 20  # limit per source → ~60 per party total
     for a in articles:
+        if len(rows) >= max_articles:
+            break
         title = a.get("title", "")
         dt = parse_gdelt_date(a.get("seendate", ""))
         if not is_recent(dt):
@@ -136,7 +133,8 @@ def process_gdelt(articles, searched_party):
             "compound": score, "sentiment_label": label,
             "fetched_at": datetime.now().isoformat()
         })
-        time.sleep(1)  # gentle pacing for API rate limits
+        print(f"  {searched_party} GDELT: {len(rows)}/{max_articles} analyzed")
+        time.sleep(1)
     return rows
 
 def fetch_rss(query, lang="en-IN", country="IN"):
@@ -146,12 +144,14 @@ def fetch_rss(query, lang="en-IN", country="IN"):
 
 def process_rss(entries, searched_party, needs_translation=False):
     rows = []
+    max_articles = 20  # limit per source → ~60 per party total
     for e in entries:
+        if len(rows) >= max_articles:
+            break
         dt = parse_rss_date(e.get("published", ""))
         if not is_recent(dt):
             continue
         orig = e.get("title", "")
-        # Note: AI can read Punjabi/mixed text directly; no separate translation call needed
         party, score, label, confidence, reasoning = analyze_with_ai(orig, searched_party)
         if party is None:
             continue
@@ -165,6 +165,7 @@ def process_rss(entries, searched_party, needs_translation=False):
             "compound": score, "sentiment_label": label,
             "fetched_at": datetime.now().isoformat()
         })
+        print(f"  {searched_party} RSS: {len(rows)}/{max_articles} analyzed")
         time.sleep(1)
     return rows
 
@@ -176,28 +177,22 @@ def run_collection():
         for q in terms.get("english", []):
             all_rows += process_gdelt(fetch_gdelt(q), party)
             time.sleep(6)
-
         print(f"[{datetime.now()}] RSS English: {party}...")
         for q in terms.get("english", []):
             all_rows += process_rss(fetch_rss(q), party)
-
         print(f"[{datetime.now()}] RSS Punjabi: {party}...")
         for q in terms.get("punjabi", []):
             all_rows += process_rss(fetch_rss(q, lang="pa-IN", country="IN"), party, needs_translation=True)
-
     df = pd.DataFrame(all_rows)
     output_file = "punjab_sentiment_live.csv"
-
     if os.path.exists(output_file):
         try:
             old_df = pd.read_csv(output_file)
             df = pd.concat([old_df, df], ignore_index=True)
             df.drop_duplicates(subset="url", keep="last", inplace=True)
-            # prune anything older than 7 days from the combined file too
             df["fetched_at"] = pd.to_datetime(df["fetched_at"], errors="coerce")
         except Exception:
             pass
-
     df.to_csv(output_file, index=False)
     print(f"[{datetime.now()}] Saved {len(df)} total articles (AI-analyzed, last 7 days only).")
 
