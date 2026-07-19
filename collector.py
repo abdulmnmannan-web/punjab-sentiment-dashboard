@@ -113,7 +113,7 @@ def fetch_gdelt(query, max_records=100, retries=2):
 
 def process_gdelt(articles, searched_party):
     rows = []
-    max_articles = 8  # stricter limit
+    max_articles = 8
     for a in articles:
         if len(rows) >= max_articles:
             break
@@ -144,7 +144,7 @@ def fetch_rss(query, lang="en-IN", country="IN"):
 
 def process_rss(entries, searched_party, needs_translation=False):
     rows = []
-    max_articles = 8  # stricter limit
+    max_articles = 8
     for e in entries:
         if len(rows) >= max_articles:
             break
@@ -200,8 +200,16 @@ if __name__ == "__main__":
     print("=" * 60)
     print("Punjab News Collector (Groq AI analysis, last 7 days)")
     print("=" * 60)
-    while True:
-        print(f"\n[{datetime.now()}] Starting collection...")
+
+    # If running on GitHub Actions → run only once and exit
+    if os.getenv("GITHUB_ACTIONS"):
+        print(f"\n[{datetime.now()}] Running in GitHub Actions – single collection cycle")
         run_collection()
-        print(f"[{datetime.now()}] Sleeping 4 hours...")
-        time.sleep(14400)
+        print(f"[{datetime.now()}] Done. Exiting.")
+    else:
+        # Local continuous mode
+        while True:
+            print(f"\n[{datetime.now()}] Starting collection...")
+            run_collection()
+            print(f"[{datetime.now()}] Sleeping 4 hours...")
+            time.sleep(14400)
