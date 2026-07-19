@@ -1,0 +1,10 @@
+{
+  "AAP": {
+    "english": ["AAP Punjab", "Aam Aadmi Party Punjab", "Bhagwant Mann"],
+    "punjabi": ["ਆਪ ਪੰਜਾਬ", "ਭਗਵੰਤ ਮਾਨ"]
+  },
+  "INC": {
+    "english": ["Congress Punjab", "Punjab Congress party", "Rahul Gandhi Punjab"],
+    "punjabi": ["ਕਾਂਗਰਸ ਪੰਜਾਬ", "ਰਾਹੁਲ ਗਾਂਧੀ"]
+  }
+}
