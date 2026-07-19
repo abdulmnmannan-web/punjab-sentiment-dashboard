@@ -20,7 +20,7 @@ if not api_key:
         raise Exception("GROQ_API_KEY not found in environment or ~/.groq_key file")
 
 client = Groq(api_key=api_key)
-MODEL = "llama-3.1-8b-instant"  # fast + high free-tier rate limits
+MODEL = "llama-3.1-8b-instant"
 CUTOFF_DATE = datetime.now(timezone.utc) - timedelta(days=7)
 PARTIES = ["AAP", "INC", "BJP", "SAD"]
 
@@ -113,7 +113,7 @@ def fetch_gdelt(query, max_records=100, retries=2):
 
 def process_gdelt(articles, searched_party):
     rows = []
-    max_articles = 20  # limit per source → ~60 per party total
+    max_articles = 8  # stricter limit
     for a in articles:
         if len(rows) >= max_articles:
             break
@@ -144,7 +144,7 @@ def fetch_rss(query, lang="en-IN", country="IN"):
 
 def process_rss(entries, searched_party, needs_translation=False):
     rows = []
-    max_articles = 20  # limit per source → ~60 per party total
+    max_articles = 8  # stricter limit
     for e in entries:
         if len(rows) >= max_articles:
             break
