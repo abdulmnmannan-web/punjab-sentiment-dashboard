@@ -90,8 +90,36 @@ else:
     fig = px.bar(summary, x="party", y="mean", text="count", labels={"mean": "Avg Sentiment"})
     st.plotly_chart(fig, width="stretch")
 
+       # ────────────────────────────────────────────────
+    # Collection Period + Download
+    # ────────────────────────────────────────────────
+    st.markdown("---")
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        if not filtered.empty and "fetched_at" in filtered.columns:
+            min_date = filtered["fetched_at"].min()
+            max_date = filtered["fetched_at"].max()
+            st.info(f"**Article Collection Period:** {min_date.strftime('%d %b %Y')} → {max_date.strftime('%d %b %Y')}")
+        else:
+            st.info("Article Collection Period: Not available")
+
+    with col2:
+        # Download button
+        csv = filtered.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="Download Full Data (CSV)",
+            data=csv,
+            file_name="punjab_sentiment_articles.csv",
+            mime="text/csv"
+        )
+
+    # ────────────────────────────────────────────────
+    # Latest Headlines (News Portal Style)
+    # ────────────────────────────────────────────────
     st.subheader("Latest Headlines")
-    recent = filtered.sort_values("fetched_at", ascending=False).head(30)
+
+    recent = filtered.sort_values("fetched_at", ascending=False).head(40)
 
     if recent.empty:
         st.info("No headlines match the current filters.")
@@ -99,81 +127,44 @@ else:
         for _, row in recent.iterrows():
             label = row.get("sentiment_label", "neutral")
             if label == "favoring":
-                mood_emoji, color = "😊", GREEN
+                mood_emoji, color, badge = "🟢", "#138808", "Favoring"
             elif label == "against":
-                mood_emoji, color = "😞", "#CC0000"
+                mood_emoji, color, badge = "🔴", "#CC0000", "Against"
             else:
-                mood_emoji, color = "😐", "#888888"
+                mood_emoji, color, badge = "⚪", "#666666", "Neutral"
 
-            col1, col2 = st.columns([0.08, 0.92])
-            with col1:
-                st.markdown(f"<h2 style='color:{color};'>{mood_emoji}</h2>", unsafe_allow_html=True)
-            with col2:
-                url = row.get("url", "")
-                title = row.get("title_english", row.get("title_original", "(no title)"))
-                if url and isinstance(url, str):
-                    st.markdown(f"<a href='{url}' target='_blank' style='text-decoration:none;color:black;font-weight:bold;font-size:16px;'>{title}</a>", unsafe_allow_html=True)
-                else:
-                    st.write(f"**{title}**")
+            title = row.get("title_english", row.get("title_original", "(no title)"))
+            url = row.get("url", "")
+            source = row.get("source", "Unknown")
+            party = row.get("party", "")
+            score = row.get("compound", 0)
+            fetched = row.get("fetched_at")
 
-                st.markdown(f"<span style='background-color:{color};color:white;padding:2px 8px;border-radius:4px;font-size:12px;'>{label} {row.get('party','')}</span>", unsafe_allow_html=True)
-                st.caption(f"Searched: {row.get('searched_party','N/A')} | {row.get('language','')} | {row.get('source','')} | {row.get('fetched_at')}")
-                st.caption(f"Score: {row.get('compound', 0):.3f}")
+            # Card-like layout
+            with st.container():
+                st.markdown(
+                    f"""
+                    <div style="border-left: 5px solid {color}; padding: 12px 16px; margin-bottom: 12px; background-color: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:13px; color:#555;">{source} • {party}</span>
+                            <span style="background-color:{color}; color:white; padding:2px 10px; border-radius:12px; font-size:12px;">{badge}</span>
+                        </div>
+                        <div style="margin-top:6px;">
+                            <a href="{url}" target="_blank" style="text-decoration:none; color:#111; font-size:17px; font-weight:600; line-height:1.4;">
+                                {title}
+                            </a>
+                        </div>
+                        <div style="margin-top:8px; font-size:13px; color:#666;">
+                            Score: {score:.3f} &nbsp;|&nbsp; {fetched}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
 
-                with st.expander("Why this label?"):
-                    st.write(f"**Analysis:** {row.get('analysis_reasoning', 'No reasoning available')}")
-                    st.write(f"**Confidence:** {row.get('confidence', 'N/A')}")
-            st.markdown("---")
-                # ────────────────────────────────────────────────
-    # News Portal Sentiment Breakdown
-    # ────────────────────────────────────────────────
-    st.subheader("News Portal Sentiment Breakdown")
+                with st.expander("Why this classification?"):
+                    st.write(row.get("analysis_reasoning", "No reasoning available"))
 
-    if filtered.empty:
-        st.info("No data available for the selected filters.")
-    else:
-        # Create a summary table
-        portal_summary = (
-            filtered
-            .groupby(["source", "party", "sentiment_label"])
-            .size()
-            .unstack(fill_value=0)
-            .reset_index()
-        )
-
-        # Ensure the three sentiment columns exist
-        for col in ["favoring", "against", "neutral"]:
-            if col not in portal_summary.columns:
-                portal_summary[col] = 0
-
-        portal_summary["total"] = portal_summary["favoring"] + portal_summary["against"] + portal_summary["neutral"]
-
-        # Average sentiment score per source + party
-        avg_scores = (
-            filtered
-            .groupby(["source", "party"])["compound"]
-            .mean()
-            .reset_index()
-            .rename(columns={"compound": "avg_score"})
-        )
-
-        portal_summary = portal_summary.merge(avg_scores, on=["source", "party"], how="left")
-
-        # Sort by total articles
-        portal_summary = portal_summary.sort_values("total", ascending=False)
-
-        # Show only top portals to keep it clean
-        top_portals = portal_summary["source"].value_counts().head(15).index
-        portal_summary = portal_summary[portal_summary["source"].isin(top_portals)]
-
-        st.dataframe(
-            portal_summary[["source", "party", "favoring", "against", "neutral", "total", "avg_score"]],
-            use_container_width=True,
-            hide_index=True
-        )
-
-        st.caption("Showing top 15 news sources by article volume. Positive = favoring, Negative = against.")
-
-if st.button("Refresh view"):
-    st.cache_data.clear()
-    st.rerun()
+    if st.button("Refresh view"):
+        st.cache_data.clear()
+        st.rerun()
