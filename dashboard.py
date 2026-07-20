@@ -119,6 +119,77 @@ else:
     # ────────────────────────────────────────────────
     st.subheader("Latest Headlines")
 
+        # ────────────────────────────────────────────────
+    # News Portal Sentiment Breakdown
+    # ────────────────────────────────────────────────
+    st.subheader("News Portal Sentiment Breakdown")
+
+    if filtered.empty:
+        st.info("No data available for the selected filters.")
+    else:
+        portal_summary = (
+            filtered
+            .groupby(["source", "party", "sentiment_label"])
+            .size()
+            .unstack(fill_value=0)
+            .reset_index()
+        )
+
+        for col in ["favoring", "against", "neutral"]:
+            if col not in portal_summary.columns:
+                portal_summary[col] = 0
+
+        portal_summary["total"] = portal_summary["favoring"] + portal_summary["against"] + portal_summary["neutral"]
+
+        avg_scores = (
+            filtered
+            .groupby(["source", "party"])["compound"]
+            .mean()
+            .reset_index()
+            .rename(columns={"compound": "avg_score"})
+        )
+
+        portal_summary = portal_summary.merge(avg_scores, on=["source", "party"], how="left")
+        portal_summary = portal_summary.sort_values("total", ascending=False)
+
+        top_portals = portal_summary["source"].value_counts().head(15).index
+        portal_summary = portal_summary[portal_summary["source"].isin(top_portals)]
+
+        st.dataframe(
+            portal_summary[["source", "party", "favoring", "against", "neutral", "total", "avg_score"]],
+            use_container_width=True,
+            hide_index=True
+        )
+        st.caption("Showing top 15 news sources by article volume.")
+
+    # ────────────────────────────────────────────────
+    # Collection Period + Download
+    # ────────────────────────────────────────────────
+    st.markdown("---")
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        if not filtered.empty and "fetched_at" in filtered.columns:
+            min_date = filtered["fetched_at"].min()
+            max_date = filtered["fetched_at"].max()
+            st.info(f"**Article Collection Period:** {min_date.strftime('%d %b %Y')} → {max_date.strftime('%d %b %Y')}")
+        else:
+            st.info("Article Collection Period: Not available")
+
+    with col2:
+        csv = filtered.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="Download Full Data (CSV)",
+            data=csv,
+            file_name="punjab_sentiment_articles.csv",
+            mime="text/csv"
+        )
+
+    # ────────────────────────────────────────────────
+    # Latest Headlines (News Portal Style)
+    # ────────────────────────────────────────────────
+    st.subheader("Latest Headlines")
+
     recent = filtered.sort_values("fetched_at", ascending=False).head(40)
 
     if recent.empty:
@@ -140,7 +211,6 @@ else:
             score = row.get("compound", 0)
             fetched = row.get("fetched_at")
 
-            # Card-like layout
             with st.container():
                 st.markdown(
                     f"""
