@@ -37,5 +37,11 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add *.csv *.xlsx *.json || true
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update sentiment data" && git push)
+          git add punjab_sentiment_live.csv || true
+          git status
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Auto-update sentiment data"
+            git push
+          fi
