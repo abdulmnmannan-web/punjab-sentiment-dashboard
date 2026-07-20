@@ -21,7 +21,7 @@ st.markdown(f"""
 @st.cache_data(ttl=60)
 def load_data():
     try:
-        df = pd.read_csv(DATA_FILE)
+        df = pd.read_csv(DATA_FILE, encoding="utf-8")
         df["fetched_at"] = pd.to_datetime(df["fetched_at"], errors="coerce")
         return df
     except FileNotFoundError:
@@ -140,48 +140,39 @@ else:
             key="download_full_data"
         )
 
-    # Latest Headlines
-    st.subheader("Latest Headlines")
-    recent = filtered.sort_values("fetched_at", ascending=False).head(40)
-    if recent.empty:
-        st.info("No headlines match the current filters.")
+    # All Articles Table
+    st.subheader("All Articles")
+    if filtered.empty:
+        st.info("No articles match the current filters.")
     else:
-        for _, row in recent.iterrows():
-            label = row.get("sentiment_label", "neutral")
-            if label == "favoring":
-                color, badge = "#138808", "Favoring"
-            elif label == "against":
-                color, badge = "#CC0000", "Against"
-            else:
-                color, badge = "#666666", "Neutral"
+        display_df = filtered[[
+            "fetched_at", "source", "party", "sentiment_label",
+            "compound", "title_english", "url"
+        ]].copy()
 
-            title = row.get("title_english", row.get("title_original", "(no title)"))
-            url = row.get("url", "")
-            source = row.get("source", "Unknown")
-            party = row.get("party", "")
-            score = row.get("compound", 0)
-            fetched = row.get("fetched_at")
+        display_df = display_df.rename(columns={
+            "fetched_at": "Date",
+            "source": "News Portal",
+            "party": "Party",
+            "sentiment_label": "Sentiment",
+            "compound": "Score",
+            "title_english": "Headline",
+            "url": "Link"
+        })
 
-            with st.container():
-                st.markdown(
-                    f"""
-                    <div style="border-left: 5px solid {color}; padding: 12px 16px; margin-bottom: 12px; background-color: white; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="font-size:13px; color:#555;">{source} • {party}</span>
-                            <span style="background-color:{color}; color:white; padding:2px 10px; border-radius:12px; font-size:12px;">{badge}</span>
-                        </div>
-                        <div style="margin-top:6px;">
-                            <a href="{url}" target="_blank" style="text-decoration:none; color:#111; font-size:17px; font-weight:600; line-height:1.4;">{title}</a>
-                        </div>
-                        <div style="margin-top:8px; font-size:13px; color:#666;">
-                            Score: {score:.3f} &nbsp;|&nbsp; {fetched}
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-                with st.expander("Why this classification?"):
-                    st.write(row.get("analysis_reasoning", "No reasoning available"))
+        display_df = display_df.sort_values("Date", ascending=False)
+
+        st.dataframe(
+            display_df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Link": st.column_config.LinkColumn("Link"),
+                "Score": st.column_config.NumberColumn(format="%.3f"),
+                "Date": st.column_config.DatetimeColumn(format="DD MMM YYYY, HH:mm")
+            }
+        )
+        st.caption(f"Showing all {len(display_df)} articles matching the current filters.")
 
 if st.button("Refresh view"):
     st.cache_data.clear()
