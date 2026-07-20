@@ -124,6 +124,55 @@ else:
                     st.write(f"**Analysis:** {row.get('analysis_reasoning', 'No reasoning available')}")
                     st.write(f"**Confidence:** {row.get('confidence', 'N/A')}")
             st.markdown("---")
+                # ────────────────────────────────────────────────
+    # News Portal Sentiment Breakdown
+    # ────────────────────────────────────────────────
+    st.subheader("News Portal Sentiment Breakdown")
+
+    if filtered.empty:
+        st.info("No data available for the selected filters.")
+    else:
+        # Create a summary table
+        portal_summary = (
+            filtered
+            .groupby(["source", "party", "sentiment_label"])
+            .size()
+            .unstack(fill_value=0)
+            .reset_index()
+        )
+
+        # Ensure the three sentiment columns exist
+        for col in ["favoring", "against", "neutral"]:
+            if col not in portal_summary.columns:
+                portal_summary[col] = 0
+
+        portal_summary["total"] = portal_summary["favoring"] + portal_summary["against"] + portal_summary["neutral"]
+
+        # Average sentiment score per source + party
+        avg_scores = (
+            filtered
+            .groupby(["source", "party"])["compound"]
+            .mean()
+            .reset_index()
+            .rename(columns={"compound": "avg_score"})
+        )
+
+        portal_summary = portal_summary.merge(avg_scores, on=["source", "party"], how="left")
+
+        # Sort by total articles
+        portal_summary = portal_summary.sort_values("total", ascending=False)
+
+        # Show only top portals to keep it clean
+        top_portals = portal_summary["source"].value_counts().head(15).index
+        portal_summary = portal_summary[portal_summary["source"].isin(top_portals)]
+
+        st.dataframe(
+            portal_summary[["source", "party", "favoring", "against", "neutral", "total", "avg_score"]],
+            use_container_width=True,
+            hide_index=True
+        )
+
+        st.caption("Showing top 15 news sources by article volume. Positive = favoring, Negative = against.")
 
 if st.button("Refresh view"):
     st.cache_data.clear()
