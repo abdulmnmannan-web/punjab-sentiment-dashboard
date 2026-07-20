@@ -1,10 +1,72 @@
 {
   "AAP": {
-    "english": ["AAP Punjab", "Aam Aadmi Party Punjab", "Bhagwant Mann"],
-    "punjabi": ["ਆਪ ਪੰਜਾਬ", "ਭਗਵੰਤ ਮਾਨ"]
+    "english": [
+      "AAP Punjab",
+      "Aam Aadmi Party Punjab",
+      "Bhagwant Mann",
+      "AAP government Punjab"
+    ],
+    "punjabi": [
+      "ਆਪ ਪੰਜਾਬ",
+      "ਭਗਵੰਤ ਮਾਨ",
+      "ਆਮ ਆਦਮੀ ਪਾਰਟੀ ਪੰਜਾਬ"
+    ]
   },
   "INC": {
-    "english": ["Congress Punjab", "Punjab Congress party", "Rahul Gandhi Punjab"],
-    "punjabi": ["ਕਾਂਗਰਸ ਪੰਜਾਬ", "ਰਾਹੁਲ ਗਾਂਧੀ"]
+    "english": [
+      "Congress Punjab",
+      "Punjab Congress",
+      "Rahul Gandhi Punjab",
+      "Charanjit Channi",
+      "Raja Warring"
+    ],
+    "punjabi": [
+      "ਕਾਂਗਰਸ ਪੰਜਾਬ",
+      "ਰਾਹੁਲ ਗਾਂਧੀ",
+      "ਚਰਨਜੀਤ ਚੰਨੀ",
+      "ਰਾਜਾ ਵੜਿੰਗ"
+    ]
+  },
+  "BJP": {
+    "english": [
+      "BJP Punjab",
+      "Punjab BJP",
+      "Sunil Jakhar",
+      "PM Modi Punjab",
+      "Bharatiya Janata Party Punjab"
+    ],
+    "punjabi": [
+      "ਭਾਜਪਾ ਪੰਜਾਬ",
+      "ਸੁਨੀਲ ਜਾਖੜ",
+      "ਪ੍ਰਧਾਨ ਮੰਤਰੀ ਮੋਦੀ ਪੰਜਾਬ"
+    ]
+  },
+  "SAD": {
+    "english": [
+      "Shiromani Akali Dal",
+      "Sukhbir Badal",
+      "SAD Badal",
+      "Akali Dal Punjab",
+      "Harsimrat Kaur Badal"
+    ],
+    "punjabi": [
+      "ਸ਼੍ਰੋਮਣੀ ਅਕਾਲੀ ਦਲ",
+      "ਸੁਖਬੀਰ ਬਾਦਲ",
+      "ਅਕਾਲੀ ਦਲ",
+      "ਹਰਸਿਮਰਤ ਕੌਰ ਬਾਦਲ"
+    ]
+  },
+  "Waris Punjab De": {
+    "english": [
+      "Waris Punjab De",
+      "Amritpal Singh",
+      "Waris Punjab De Punjab",
+      "Amritpal Singh Punjab"
+    ],
+    "punjabi": [
+      "ਵਾਰਿਸ ਪੰਜਾਬ ਦੇ",
+      "ਅੰਮ੍ਰਿਤਪਾਲ ਸਿੰਘ",
+      "ਵਾਰਿਸ ਪੰਜਾਬ ਦੇ ਪੰਜਾਬ"
+    ]
   }
 }
